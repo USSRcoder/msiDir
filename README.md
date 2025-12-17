@@ -1,9 +1,10 @@
 # msiDir
 
-Read msi installation dirs. With out API deps.
+Read msi installation dirs. 
+Without WinAPI deps.
 
  - Load msi db files from mscfb container (MSCFB.php);
- - Load msi db tables (see ms orca, wine source);
+ - Load msi db tables (Read only). see ms orca, wine source;
  - Parse msi source and destination directories;
 
 ```
