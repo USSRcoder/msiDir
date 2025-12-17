@@ -69,42 +69,42 @@ function fetStream($mscbf, $name) {
 
 class MsiStringTable
 {
-    // Парсер строкового пула MSI (StringData + StringPool)
+    // РџР°СЂСЃРµСЂ СЃС‚СЂРѕРєРѕРІРѕРіРѕ РїСѓР»Р° MSI (StringData + StringPool)
     public $strings = array();
     public $codepage = 0;
     
     public function loadFromMem($stringData, $dataSize, $stringPool, $poolSize, &$bytes_per_strref)
     {        
-        $poolWords = unpack('v*', substr($stringPool, 0, 4)); // 1. Читаем заголовок StringPool (первые 4 байта)
+        $poolWords = unpack('v*', substr($stringPool, 0, 4)); // 1. Р§РёС‚Р°РµРј Р·Р°РіРѕР»РѕРІРѕРє StringPool (РїРµСЂРІС‹Рµ 4 Р±Р°Р№С‚Р°)
 	$bytes_per_strref = ($poolSize > 4) && ($poolWords[2] & 0x8000) ? MSIDatabase::LONG_STR_BYTES : 2 /*sizeof(USHORT)*/;
         $this->codepage = $poolWords[1] | (($poolWords[2] & 0x7FFF) << 16);        
         
-        // 2. Парсим пул строк (начиная с позиции 4)
+        // 2. РџР°СЂСЃРёРј РїСѓР» СЃС‚СЂРѕРє (РЅР°С‡РёРЅР°СЏ СЃ РїРѕР·РёС†РёРё 4)
         $poolOffset = 4;
         $dataOffset = 0;
         $stringId = 1;
         
         while ($poolOffset + 3 < $poolSize) {
             
-            $poolEntry = unpack('v*', substr($stringPool, $poolOffset, 4)); // Читаем 4 байта для каждой записи пула
+            $poolEntry = unpack('v*', substr($stringPool, $poolOffset, 4)); // Р§РёС‚Р°РµРј 4 Р±Р°Р№С‚Р° РґР»СЏ РєР°Р¶РґРѕР№ Р·Р°РїРёСЃРё РїСѓР»Р°
             $poolOffset += 4;
             
             $len = $poolEntry[1];
             $refs = $poolEntry[2];
 
-            if ($len === 0 && $refs === 0) { // Пропускаем пустые записи
+            if ($len === 0 && $refs === 0) { // РџСЂРѕРїСѓСЃРєР°РµРј РїСѓСЃС‚С‹Рµ Р·Р°РїРёСЃРё
                 $stringId++;
                 continue;
             }
             
-            if ($len === 0) { // Обработка длинных строк (>64K)
+            if ($len === 0) { // РћР±СЂР°Р±РѕС‚РєР° РґР»РёРЅРЅС‹С… СЃС‚СЂРѕРє (>64K)
                 if ($poolOffset + 3 >= $poolSize) break;
                 $nextEntry = unpack('v*', substr($stringPool, $poolOffset, 4));
                 $poolOffset += 4;
                 $len = $nextEntry[1] + ($nextEntry[2] << 16);
             }
             
-            if ($dataOffset + $len <= $dataSize) {  // Извлекаем строку из StringData
+            if ($dataOffset + $len <= $dataSize) {  // РР·РІР»РµРєР°РµРј СЃС‚СЂРѕРєСѓ РёР· StringData
                 $this->strings[$stringId] = substr($stringData, $dataOffset, $len);
                 $dataOffset += $len;
             }
@@ -117,14 +117,14 @@ class MsiStringTable
 
     public function loadFromFiles($stringDataFile, $stringPoolFile, &$bytes_per_strref) {
 
-        // 1. Загружаем StringPool
+        // 1. Р—Р°РіСЂСѓР¶Р°РµРј StringPool
 	$poolSize = filesize($stringPoolFile);
 	if ($poolSize === false) return false;
 
         $stringPool = file_get_contents($stringPoolFile);
         if ($stringPool === false) return false;
 
-        // 2. Загружаем StringData
+        // 2. Р—Р°РіСЂСѓР¶Р°РµРј StringData
 	$dataSize = filesize($stringDataFile);
 	if ($dataSize === false) return false;
 
@@ -143,7 +143,7 @@ class MsiStringTable
 }
 
 
-// Структура MSITABLE на PHP
+// РЎС‚СЂСѓРєС‚СѓСЂР° MSITABLE РЅР° PHP
 class MSITABLE {
 	public $data = array();
 	public $data_persistent = array();
@@ -164,7 +164,7 @@ class MSITABLE {
 	}
 }
 
-// Получение информации о колонках таблицы MSI
+// РџРѕР»СѓС‡РµРЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РєРѕР»РѕРЅРєР°С… С‚Р°Р±Р»РёС†С‹ MSI
 class MSIDatabase {
 
     public $stringTable = null;
@@ -192,7 +192,7 @@ class MSIDatabase {
 	array('tablename' => '','number' => 0,'colname' => '','type' => 0,'offset' => 0,'hash_table' => null
     );
 
-    /* Информация о таблицах по умолчанию*/
+    /* РРЅС„РѕСЂРјР°С†РёСЏ Рѕ С‚Р°Р±Р»РёС†Р°С… РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ*/
     public $_Columns_cols = array(
         array('tablename' => '_Columns', 'number' => 1, 'colname' => 'Table',  'type' => self::MSITYPE_VALID | self::MSITYPE_STRING | self::MSITYPE_KEY | 64,'offset' => 0, 'hash_table' => null        ),
         array('tablename' => '_Columns', 'number' => 2, 'colname' => 'Number', 'type' => self::MSITYPE_VALID | self::MSITYPE_KEY | 2,                        'offset' => 2, 'hash_table' => null        ),
@@ -216,14 +216,14 @@ class MSIDatabase {
 	return $s;
     }    
 
-    static function MSITYPE_IS_BINARY($type) { // Проверка, является ли колонка бинарной (MSITYPE_IS_BINARY)
+    static function MSITYPE_IS_BINARY($type) { // РџСЂРѕРІРµСЂРєР°, СЏРІР»СЏРµС‚СЃСЏ Р»Рё РєРѕР»РѕРЅРєР° Р±РёРЅР°СЂРЅРѕР№ (MSITYPE_IS_BINARY)
         return (($type & ~(self::MSITYPE_NULLABLE)) == (self::MSITYPE_STRING | self::MSITYPE_VALID));
     }
 
     public static function bytes_per_column($col, $bytes_per_strref) {
         $type = $col['type'];
         
-        if (self::MSITYPE_IS_BINARY($type)) return 2; // Для бинарных колонок всегда 2 байта
+        if (self::MSITYPE_IS_BINARY($type)) return 2; // Р”Р»СЏ Р±РёРЅР°СЂРЅС‹С… РєРѕР»РѕРЅРѕРє РІСЃРµРіРґР° 2 Р±Р°Р№С‚Р°
         if ($type & self::MSITYPE_STRING)   return $bytes_per_strref;
 
         $tsize = $type & self::MSI_DATASIZEMASK;
@@ -265,7 +265,7 @@ class MSIDatabase {
         
         for ($i = 0; $i < $n; $i++) {
             if ($colinfo && $i < $sz) {
-                // Копируем информацию о колонке
+                // РљРѕРїРёСЂСѓРµРј РёРЅС„РѕСЂРјР°С†РёСЋ Рѕ РєРѕР»РѕРЅРєРµ
 		$colinfo[$i] = $p[$i];
                 //$colinfo[$i] = array(
                 //    'tablename' => $p[$i]['tablename'],
@@ -282,7 +282,7 @@ class MSIDatabase {
             }
         }
 	
-        // Вычисляем смещения колонок
+        // Р’С‹С‡РёСЃР»СЏРµРј СЃРјРµС‰РµРЅРёСЏ РєРѕР»РѕРЅРѕРє
         $this->table_calc_column_offsets($db, $colinfo, $n);
 	//print("get_defaulttablecolumns:n=$n\n");
         $sz = $n;
@@ -292,19 +292,19 @@ class MSIDatabase {
 
 
     /**
-     * table_get_column_info - Получение информации о колонках таблицы
-     * @param MSIDatabase $db База данных
-     * @param string $name Имя таблицы
-     * @param array &$pcols Ссылка на массив с информацией о колонках
-     * @param int &$pcount Ссылка на количество колонок
-     * @return int Код ошибки
+     * table_get_column_info - РџРѕР»СѓС‡РµРЅРёРµ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РєРѕР»РѕРЅРєР°С… С‚Р°Р±Р»РёС†С‹
+     * @param MSIDatabase $db Р‘Р°Р·Р° РґР°РЅРЅС‹С…
+     * @param string $name РРјСЏ С‚Р°Р±Р»РёС†С‹
+     * @param array &$pcols РЎСЃС‹Р»РєР° РЅР° РјР°СЃСЃРёРІ СЃ РёРЅС„РѕСЂРјР°С†РёРµР№ Рѕ РєРѕР»РѕРЅРєР°С…
+     * @param int &$pcount РЎСЃС‹Р»РєР° РЅР° РєРѕР»РёС‡РµСЃС‚РІРѕ РєРѕР»РѕРЅРѕРє
+     * @return int РљРѕРґ РѕС€РёР±РєРё
      */
     public static function table_get_column_info($db, $name, &$pcols, &$pcount) {
         $r = 0;
         $column_count = 0;
         $columns = array();
         
-        // Получаем количество колонок в таблице
+        // РџРѕР»СѓС‡Р°РµРј РєРѕР»РёС‡РµСЃС‚РІРѕ РєРѕР»РѕРЅРѕРє РІ С‚Р°Р±Р»РёС†Рµ
 	$dummy = 0;
         $column_count = 0;
         $r = $db->get_tablecolumns($db, $name, $dummy, $column_count);
@@ -322,7 +322,7 @@ class MSIDatabase {
         
         // TRACE("table %s found\n", debugstr_w(name));
         
-        // Создаем массив для колонок
+        // РЎРѕР·РґР°РµРј РјР°СЃСЃРёРІ РґР»СЏ РєРѕР»РѕРЅРѕРє
         $columns = array_fill(0, $column_count, $db->MSICOLUMNINFO);
         
         $r = $db->get_tablecolumns($db, $name, $columns, $column_count);
@@ -355,12 +355,12 @@ class MSIDatabase {
     
     
     /**
-     * Вычисляет размер строки таблицы MSI
-     * @param MSIDatabase $db База данных
-     * @param array $cols Массив информации о колонках
-     * @param int $count Количество колонок
-     * @param int $bytes_per_strref Размер строковой ссылки (2 или 3 байта)
-     * @return int Размер строки в байтах
+     * Р’С‹С‡РёСЃР»СЏРµС‚ СЂР°Р·РјРµСЂ СЃС‚СЂРѕРєРё С‚Р°Р±Р»РёС†С‹ MSI
+     * @param MSIDatabase $db Р‘Р°Р·Р° РґР°РЅРЅС‹С…
+     * @param array $cols РњР°СЃСЃРёРІ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РєРѕР»РѕРЅРєР°С…
+     * @param int $count РљРѕР»РёС‡РµСЃС‚РІРѕ РєРѕР»РѕРЅРѕРє
+     * @param int $bytes_per_strref Р Р°Р·РјРµСЂ СЃС‚СЂРѕРєРѕРІРѕР№ СЃСЃС‹Р»РєРё (2 РёР»Рё 3 Р±Р°Р№С‚Р°)
+     * @return int Р Р°Р·РјРµСЂ СЃС‚СЂРѕРєРё РІ Р±Р°Р№С‚Р°С…
      */
     public static function msi_table_get_row_size($db, $cols, $count, $bytes_per_strref) {
         if (!$count) 
@@ -379,13 +379,13 @@ class MSIDatabase {
     }
     
    /**
-     * read_stream_data - чтение данных из потока
-     * @param string $stg Путь к директории/хранилищу
-     * @param string $stname Имя потока
-     * @param bool $table Флаг таблицы (для кодирования имени)
-     * @param string &$pdata Ссылка для данных
-     * @param int &$psz Ссылка для размера
-     * @return int Код ошибки
+     * read_stream_data - С‡С‚РµРЅРёРµ РґР°РЅРЅС‹С… РёР· РїРѕС‚РѕРєР°
+     * @param string $stg РџСѓС‚СЊ Рє РґРёСЂРµРєС‚РѕСЂРёРё/С…СЂР°РЅРёР»РёС‰Сѓ
+     * @param string $stname РРјСЏ РїРѕС‚РѕРєР°
+     * @param bool $table Р¤Р»Р°Рі С‚Р°Р±Р»РёС†С‹ (РґР»СЏ РєРѕРґРёСЂРѕРІР°РЅРёСЏ РёРјРµРЅРё)
+     * @param string &$pdata РЎСЃС‹Р»РєР° РґР»СЏ РґР°РЅРЅС‹С…
+     * @param int &$psz РЎСЃС‹Р»РєР° РґР»СЏ СЂР°Р·РјРµСЂР°
+     * @return int РљРѕРґ РѕС€РёР±РєРё
      */
     public static function read_stream_data($stg, $stname, $table, &$pdata, &$psz) {
 
@@ -405,14 +405,14 @@ class MSIDatabase {
         
         // TRACE("%s -> %s\n", debugstr_w(stname), debugstr_w(encname));
         
-        // Открываем поток (в PHP - просто файл)
+        // РћС‚РєСЂС‹РІР°РµРј РїРѕС‚РѕРє (РІ PHP - РїСЂРѕСЃС‚Рѕ С„Р°Р№Р»)
         $filename = $stg . '/' . $encname;
         if (!file_exists($filename)) {
             printf("open stream failed - empty table($filename)?\n");
             return $ret;
         }
         
-        // Получаем размер файла
+        // РџРѕР»СѓС‡Р°РµРј СЂР°Р·РјРµСЂ С„Р°Р№Р»Р°
         $filesize = filesize($filename);
         if ($filesize === false) {
             printf("open stream failed!\n");
@@ -420,7 +420,7 @@ class MSIDatabase {
         }
 	echo $filesize."\n";
         
-        // Проверяем размер (не более 4GB)
+        // РџСЂРѕРІРµСЂСЏРµРј СЂР°Р·РјРµСЂ (РЅРµ Р±РѕР»РµРµ 4GB)
         if ($filesize > 0xFFFFFFFF) {
             printf("Too big!\n");
             return $ret;
@@ -428,7 +428,7 @@ class MSIDatabase {
         
         $sz = $filesize;
         
-        // Читаем данные
+        // Р§РёС‚Р°РµРј РґР°РЅРЅС‹Рµ
         $data = file_get_contents($filename);
         if ($data === false) {
             printf("read stream failed!\n");
@@ -446,11 +446,11 @@ class MSIDatabase {
     }
     
     /**
-     * read_table_from_storage - чтение таблицы из хранилища
-     * @param MSIDatabase $db База данных
-     * @param MSITable &$t Ссылка на объект таблицы
-     * @param string $stg Путь к хранилищу
-     * @return int Код ошибки
+     * read_table_from_storage - С‡С‚РµРЅРёРµ С‚Р°Р±Р»РёС†С‹ РёР· С…СЂР°РЅРёР»РёС‰Р°
+     * @param MSIDatabase $db Р‘Р°Р·Р° РґР°РЅРЅС‹С…
+     * @param MSITable &$t РЎСЃС‹Р»РєР° РЅР° РѕР±СЉРµРєС‚ С‚Р°Р±Р»РёС†С‹
+     * @param string $stg РџСѓС‚СЊ Рє С…СЂР°РЅРёР»РёС‰Сѓ
+     * @return int РљРѕРґ РѕС€РёР±РєРё
      */
     public static function read_table_from_storage($db, &$t, $stg, $do_associative_index = -1) {
         $rawdata = '';
@@ -458,11 +458,11 @@ class MSIDatabase {
         
         ////printf("read_table_from_storage: %s\n", $t->name);
         
-        // Получаем размер строки (заглушки)
+        // РџРѕР»СѓС‡Р°РµРј СЂР°Р·РјРµСЂ СЃС‚СЂРѕРєРё (Р·Р°РіР»СѓС€РєРё)
         $row_size = self::msi_table_get_row_size($db, $t->colinfo, $t->col_count, $db->bytes_per_strref);
         $row_size_mem = self::msi_table_get_row_size($db, $t->colinfo, $t->col_count, self::LONG_STR_BYTES);
         
-        // Пытаемся прочитать таблицу
+        // РџС‹С‚Р°РµРјСЃСЏ РїСЂРѕС‡РёС‚Р°С‚СЊ С‚Р°Р±Р»РёС†Сѓ
         $result = self::read_stream_data($stg, $t->name, true, $rawdata, $rawsize);
         if ($result != self::ERROR_SUCCESS || empty($rawdata)) {
             printf("read_table_from_storage: Error:self::read_stream_data\n");
@@ -471,14 +471,14 @@ class MSIDatabase {
         
         // TRACE("Read %d bytes\n", $rawsize);
         
-        // Проверяем размер таблицы
+        // РџСЂРѕРІРµСЂСЏРµРј СЂР°Р·РјРµСЂ С‚Р°Р±Р»РёС†С‹
         if ($rawsize % $row_size != 0) {
             printf("read_table_from_storage: `{$t->name}` Table size is invalid %d/%d\n", $rawsize, $row_size);
 	    die;
             return self::ERROR_FUNCTION_FAILED;
         }
         
-        // Вычисляем количество строк
+        // Р’С‹С‡РёСЃР»СЏРµРј РєРѕР»РёС‡РµСЃС‚РІРѕ СЃС‚СЂРѕРє
         if ($row_size > 0) {
             $t->row_count = (int)($rawsize / $row_size);
         } else {
@@ -486,7 +486,7 @@ class MSIDatabase {
         }
         
         if ($t->row_count > 0) {
-            // Выделяем память для данных
+            // Р’С‹РґРµР»СЏРµРј РїР°РјСЏС‚СЊ РґР»СЏ РґР°РЅРЅС‹С…
             //$t->data = array_fill(0, $t->row_count, array());
 	    $t->data = [];
             $t->data_persistent = array_fill(0, $t->row_count, true);
@@ -506,14 +506,14 @@ class MSIDatabase {
 	}
 
         
-        // Транспонируем данные
+        // РўСЂР°РЅСЃРїРѕРЅРёСЂСѓРµРј РґР°РЅРЅС‹Рµ
         // TRACE("Transposing data from %d rows\n", $t->row_count);
 	$t->index = [];
         for ($i = 0; $i < $t->row_count; $i++) {
             $ofs = 0;
             $ofs_mem = 0;
             
-            // Инициализируем строку данных
+            // РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј СЃС‚СЂРѕРєСѓ РґР°РЅРЅС‹С…
             // $t->data[$i] = array_fill(0, $row_size_mem, 0);
             
             for ($j = 0; $j < $t->col_count; $j++) {
@@ -521,7 +521,7 @@ class MSIDatabase {
                 $n = $t->colinfo[$j]['n'];//self::bytes_per_column($t->colinfo[$j], $db->bytes_per_strref);
 
 		
-                // Копируем данные с учетом разницы в размере
+                // РљРѕРїРёСЂСѓРµРј РґР°РЅРЅС‹Рµ СЃ СѓС‡РµС‚РѕРј СЂР°Р·РЅРёС†С‹ РІ СЂР°Р·РјРµСЂРµ
                 if (($t->colinfo[$j]['type'] & self::MSITYPE_STRING) && $n < $m) {
                     //die(' 778');
                     for ($k = 0; $k < $m; $k++) {
@@ -606,7 +606,7 @@ class MSIDatabase {
             return $r;
         }
         
-        // Добавляем таблицу в кэш
+        // Р”РѕР±Р°РІР»СЏРµРј С‚Р°Р±Р»РёС†Сѓ РІ РєСЌС€
         //$this->list_add_head($this->tables, $table);
         $table_ret = $table;
 
@@ -619,12 +619,12 @@ class MSIDatabase {
     
 
     /**
-     * Чтение целого числа из данных таблицы
-     * @param array $data Данные таблицы (массив строк)
-     * @param int $row Номер строки
-     * @param int $col Смещение в байтах внутри строки
-     * @param int $bytes Количество байт для чтения (1, 2, 3, 4)
-     * @return int Прочитанное целое число
+     * Р§С‚РµРЅРёРµ С†РµР»РѕРіРѕ С‡РёСЃР»Р° РёР· РґР°РЅРЅС‹С… С‚Р°Р±Р»РёС†С‹
+     * @param array $data Р”Р°РЅРЅС‹Рµ С‚Р°Р±Р»РёС†С‹ (РјР°СЃСЃРёРІ СЃС‚СЂРѕРє)
+     * @param int $row РќРѕРјРµСЂ СЃС‚СЂРѕРєРё
+     * @param int $col РЎРјРµС‰РµРЅРёРµ РІ Р±Р°Р№С‚Р°С… РІРЅСѓС‚СЂРё СЃС‚СЂРѕРєРё
+     * @param int $bytes РљРѕР»РёС‡РµСЃС‚РІРѕ Р±Р°Р№С‚ РґР»СЏ С‡С‚РµРЅРёСЏ (1, 2, 3, 4)
+     * @return int РџСЂРѕС‡РёС‚Р°РЅРЅРѕРµ С†РµР»РѕРµ С‡РёСЃР»Рѕ
      */
     function read_table_int($data, $row, $col, $bytes) {
         $ret = 0;       
@@ -638,19 +638,19 @@ class MSIDatabase {
         return $this->stringTable->getStringById($id);
     }    
     
-    //msi_string2id - поиск ID строки в таблице строк
+    //msi_string2id - РїРѕРёСЃРє ID СЃС‚СЂРѕРєРё РІ С‚Р°Р±Р»РёС†Рµ СЃС‚СЂРѕРє
     function msi_string2id($str, $len, &$id) {
 	$id = array_search($str, $this->stringTable->strings);
         return $id === false ? self::ERROR_INVALID_PARAMETER : self::ERROR_SUCCESS;
     }
     
     /**
-     * Основная функция - получение колонок таблицы
-     * @param MSIDatabase $db База данных
-     * @param string $szTableName Имя таблицы
-     * @param array &$colinfo Массив для информации о колонках
-     * @param int &$sz Размер/количество колонок
-     * @return int Код ошибки
+     * РћСЃРЅРѕРІРЅР°СЏ С„СѓРЅРєС†РёСЏ - РїРѕР»СѓС‡РµРЅРёРµ РєРѕР»РѕРЅРѕРє С‚Р°Р±Р»РёС†С‹
+     * @param MSIDatabase $db Р‘Р°Р·Р° РґР°РЅРЅС‹С…
+     * @param string $szTableName РРјСЏ С‚Р°Р±Р»РёС†С‹
+     * @param array &$colinfo РњР°СЃСЃРёРІ РґР»СЏ РёРЅС„РѕСЂРјР°С†РёРё Рѕ РєРѕР»РѕРЅРєР°С…
+     * @param int &$sz Р Р°Р·РјРµСЂ/РєРѕР»РёС‡РµСЃС‚РІРѕ РєРѕР»РѕРЅРѕРє
+     * @return int РљРѕРґ РѕС€РёР±РєРё
      */
     public static function get_tablecolumns($db, $szTableName, &$colinfo, &$sz) {
         $r = 0;
@@ -663,14 +663,14 @@ class MSIDatabase {
 
 	////printf("\nget_tablecolumns:%s\n", $szTableName);
         
-        // Сначала проверяем таблицу по умолчанию
+        // РЎРЅР°С‡Р°Р»Р° РїСЂРѕРІРµСЂСЏРµРј С‚Р°Р±Р»РёС†Сѓ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ
         $r = $db->get_defaulttablecolumns($db, $szTableName, $colinfo, $sz);
         if ($r == self::ERROR_SUCCESS && $sz > 0) {
 	    //printf("get_tablecolumns:get_defaulttablecolumns: OK\n");
             return $r;
         }
         
-        // Получаем таблицу _Columns
+        // РџРѕР»СѓС‡Р°РµРј С‚Р°Р±Р»РёС†Сѓ _Columns
         $r = $db->get_table("_Columns", $table);
         if ($r != self::ERROR_SUCCESS) {
             printf("get_tablecolumns:couldn't load _Columns table\n");
@@ -683,7 +683,7 @@ class MSIDatabase {
 
 
         
-        // Конвертируем имя таблицы в ID из таблицы строк
+        // РљРѕРЅРІРµСЂС‚РёСЂСѓРµРј РёРјСЏ С‚Р°Р±Р»РёС†С‹ РІ ID РёР· С‚Р°Р±Р»РёС†С‹ СЃС‚СЂРѕРє
         $r = $db->msi_string2id($szTableName, -1, $table_id);
         if ($r != self::ERROR_SUCCESS) {
             printf("get_tablecolumns:Couldn't find id for %s\n", $szTableName);
@@ -691,7 +691,7 @@ class MSIDatabase {
         }
         //printf("get_tablecolumns:Table `%s` id is %d, row count is %d, maxcount = $maxcount\n", $table->name, $table_id, $table->row_count);
         
-        // Если maxcount не ноль, предполагаем что он точно соответствует этой таблице
+        // Р•СЃР»Рё maxcount РЅРµ РЅРѕР»СЊ, РїСЂРµРґРїРѕР»Р°РіР°РµРј С‡С‚Рѕ РѕРЅ С‚РѕС‡РЅРѕ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓРµС‚ СЌС‚РѕР№ С‚Р°Р±Р»РёС†Рµ
         if ($colinfo!==NULL && $maxcount > 0) {
             $colinfo = array_fill(0, $maxcount, $db->MSICOLUMNINFO);
         }
@@ -727,7 +727,7 @@ class MSIDatabase {
 			isset($table->colinfo[1]['offset']) ? $table->colinfo[1]['offset'] : 0,
 			2) - (1 << 15);
                 
-                // Проверяем что номер колонки в пределах диапазона
+                // РџСЂРѕРІРµСЂСЏРµРј С‡С‚Рѕ РЅРѕРјРµСЂ РєРѕР»РѕРЅРєРё РІ РїСЂРµРґРµР»Р°С… РґРёР°РїР°Р·РѕРЅР°
                 if ($col < 1 || $col > 64) {
                     printf($table->colinfo[1]['offset']." $i ".(1 << 15)." column %d out of range (maxcount: %d)\n", $col, $maxcount);
 		    print_r($table->colinfo);
@@ -739,7 +739,7 @@ class MSIDatabase {
 			$colinfo[$col - 1] = [];
 		}
                 
-                // Проверяем не была ли уже установлена эта колонка
+                // РџСЂРѕРІРµСЂСЏРµРј РЅРµ Р±С‹Р»Р° Р»Рё СѓР¶Рµ СѓСЃС‚Р°РЅРѕРІР»РµРЅР° СЌС‚Р° РєРѕР»РѕРЅРєР°
                 if (isset($colinfo[$col - 1]['number']) && $colinfo[$col - 1]['number'] > 0) {
                     printf("duplicate column %d\n", $col);
                     continue;
@@ -1031,7 +1031,7 @@ function getDirectoryPath($db, $t, $dirKey, &$dbindex, $depth = 0) {
     return $result;
 }
 
-// Основной вызов - заполняем кеш
+// РћСЃРЅРѕРІРЅРѕР№ РІС‹Р·РѕРІ - Р·Р°РїРѕР»РЅСЏРµРј РєРµС€
 $progress = 1;
 foreach ($directoryTable->fetched as $dirKey => $row) {
 	if ($progress % 500 == 0) {
@@ -1195,7 +1195,7 @@ if ($table->col_count > 0) {
 	    //print("\r\n");
     }
 } else {
-    echo "Ошибка: " . $result . "\n";
+    echo "РћС€РёР±РєР°: " . $result . "\n";
 }
 
 print "allOk";
